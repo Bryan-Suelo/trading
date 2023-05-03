@@ -1,10 +1,12 @@
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def symbol_to_path(symbol, base_dir='data'):
-    # Return CSV file path given ticker symbol
-    return os.path.join(base_dir, "{}.csv".format(str(symbol)))
+def plot_data(df, title='Stock prices'):
+    """ Plot stock prices with a custom title and meaningul axis labels """
+    ax = df.plot(title=title, fontsize=12)
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Price")
+    plt.show()
 
 def get_data(symbols, dates):
     # Create empty dataframe
@@ -16,7 +18,7 @@ def get_data(symbols, dates):
                         na_values=['nan'])
     
     # Rename 'Adj Close' colum to 'SPY' to prevent clash
-    dfSPY = dfSPY.rename(columns={'Adj Close':'VOO'})
+    dfSPY = dfSPY.rename(columns={'Adj Close':'SPY'})
     
     # Join the two dataframes using DataFrame.join(), with how = 'inner'
     df.join(dfSPY, how='inner')
@@ -29,37 +31,33 @@ def get_data(symbols, dates):
         df_temp = df_temp.rename(columns={'Adj Close': symbol})
         df = df.join(df_temp, how='inner')
 
+        # Drop dates SPY did not trade
         if symbol == 'SPY':
-            df = df.dropna(subset=['VOO'])
+            df = df.dropna(subset=['SPY'])
 
     return df
 
-def plot_data(df, title="Stock Prices"):
-    ax = df.plot(title= title, fontsize=2)
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Price")
-    plt.show()
-
 def test_run():
-    # Define a date range
-    dates = pd.date_range('2010-01-01', '2010-12-31')
-
-    # Choose stock symbols to read
-    symbols = ['GOOG', 'AAPL', 'IBM']
-
-    # Get stock data
+    # Read data
+    dates = pd.date_range('2012-01-01', '2012-12-31')
+    symbols = ['SPY']
     df = get_data(symbols, dates)
 
-    # Slice by row range (dates)
-    print( df.loc['2010-01-01': '2010-01-31'])
-    # Slice by column (symbols)
-    print(df['GOOG'])
-    print(df[['IBM', 'AAPL']])
-    # Slice by row and column
-    print(df.loc['2010-03-10':'2010-03-15', ['VOO','IBM']])
+    # Plot SPY data, retain matplotlib axis object
+    ax = df['SPY'].plot(title='SPY rolling stats', label='SPY')
+
+    # Compute rolling mean using a 20-day window
+    rm_SPY = df['SPY'].rolling(window=10).mean()
+
+    # Add rolling mean to same plot
+    rm_SPY.plot(label='Rolling mean', ax=ax)
+
+    # Add axis labels and legend
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price')
+    ax.legend(loc='upper left')
+    plt.show()
 
 if __name__ == "__main__":
     test_run()
-
-
-
+    
